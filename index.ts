@@ -1,4 +1,4 @@
-import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.35-alpha/deno-dom-wasm.ts";
+import { DOMParser, type HTMLDocument, Element } from "https://deno.land/x/deno_dom@v0.1.35-alpha/deno-dom-wasm.ts";
 import { NodeHtmlMarkdown } from "https://esm.sh/node-html-markdown@1.3.0";
 import { Readability } from "https://esm.sh/@mozilla/readability@0.4.4";
 import { serve } from "https://deno.land/std@0.182.0/http/server.ts";
@@ -37,6 +37,36 @@ function safeURL(url: string): URL | null {
   }
 }
 
+function rebaseLinks(document: HTMLDocument) {
+  const links = document.querySelectorAll("a");
+
+  for (const link of links) {
+    if (!(link instanceof Element)) {
+      continue;
+    }
+
+    const l = link as Element;
+    
+    const href = l.getAttribute("href");
+
+    if (!href) {
+      continue;
+    }
+
+    const url = safeURL(href);
+
+    if (!url) {
+      continue;
+    }
+
+    if (url.origin === base) {
+      continue;
+    }
+
+    l.setAttribute("href", `${base}${url}`);
+  }
+}
+
 const handler = async (request: Request): Promise<Response> => {
   const url = new URL(request.url);
 
@@ -64,6 +94,10 @@ const handler = async (request: Request): Promise<Response> => {
     return status(500, "Unable to parse HTML");
   }
 
+  if (!url.searchParams.has("no-rebase")) {
+    rebaseLinks(doc);
+  }
+
   const reader = new Readability(doc as unknown as Document);
   const article = reader.parse();
 
@@ -83,7 +117,8 @@ const handler = async (request: Request): Promise<Response> => {
   const renderedMarkdown = NodeHtmlMarkdown.translate(article.content);
 
   if (url.searchParams.has("raw")) {
-    return new Response(renderedMarkdown, {
+    return new Response(`# ${article.title}\n
+${renderedMarkdown}`, {
       status: 200,
       headers: {
         "content-type": "text/plain; charset=utf-8",
@@ -91,7 +126,7 @@ const handler = async (request: Request): Promise<Response> => {
     });
   }
 
-  return markdown(`# ${article.title}
+  return markdown(`# ${article.title} ([original](${requestedURL})) ([raw](?raw))\n\n
 ${renderedMarkdown}`);
 };
 

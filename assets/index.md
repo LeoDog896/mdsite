@@ -11,10 +11,10 @@ Render URLs as Markdown.
 
 - Appending `?raw` to the URL will return the raw Markdown.
 - Appending `?html` to the URL will return the raw HTML.
-- Appending `?no-redirect` to the URL will return the the page without
+- Appending `?no-rebase` to the URL will return the the page without
   redirecting to itself.
 
-You can use any combination of these queries.
+You can use any combination of these queries: [https://example.com?raw&no-rebase]({{base}}https://example.com?raw&no-rebase)
 
 ## Source
 
