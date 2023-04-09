@@ -9,8 +9,6 @@ const base = Deno.env.get("BASE") ?? `http://localhost:${port}/`;
 
 const mainPage = (await Deno.readTextFile("./assets/index.md")).replaceAll("{{base}}", base);
 
-const mainPageMixin = (await Deno.readTextFile("./assets/index-mixin.html")).replace("{{base}}", base);
-
 function status(code: number, message: string): Response {
   return new Response(JSON.stringify({ message }), {
     status: code,
@@ -20,8 +18,8 @@ function status(code: number, message: string): Response {
   });
 }
 
-function markdown(markdown: string, mixin?: string): Response {
-  return new Response(renderMarkdown(markdown, mixin), {
+function markdown(markdown: string): Response {
+  return new Response(renderMarkdown(markdown, true), {
     status: 200,
     headers: {
       "content-type": "text/html; charset=utf-8",
@@ -95,7 +93,7 @@ const handler = async (request: Request): Promise<Response> => {
 
   // main page
   if (url.pathname === "/") {
-    return markdown(mainPage, mainPageMixin);
+    return markdown(mainPage);
   }
 
   const requestedURL = safeURL(url.pathname.slice(1));
