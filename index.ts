@@ -6,18 +6,9 @@ import { renderMarkdown } from "./markdown.ts";
 
 const port = 8080;
 
-const mainPage = `
-# MDSite
+const mainPage = await Deno.readTextFile("./assets/index.md");
 
-Render URLs as Markdown.
-
-## Usage
-
-1. Type \`https://mdsite.deno.dev/https://example.com\` in your browser.
-2. Enjoy the rendered Markdown.
-
-You can also get the raw Markdown by appending \`?raw\` to the URL.
-`;
+const mainPageMixin = await Deno.readTextFile("./assets/index-mixin.html");
 
 function status(code: number, message: string): Response {
   return new Response(JSON.stringify({ message }), {
@@ -29,7 +20,7 @@ function status(code: number, message: string): Response {
 }
 
 function markdown(markdown: string): Response {
-  return new Response(renderMarkdown(markdown), {
+  return new Response(renderMarkdown(markdown, mainPageMixin), {
     status: 200,
     headers: {
       "content-type": "text/html; charset=utf-8",
@@ -64,6 +55,15 @@ const handler = async (request: Request): Promise<Response> => {
 
   if (!article) {
     return status(500, "Unable to parse article");
+  }
+
+  if (url.searchParams.has("html")) {
+    return new Response(article.content, {
+      status: 200,
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+      },
+    });
   }
 
   const renderedMarkdown = NodeHtmlMarkdown.translate(article.content);

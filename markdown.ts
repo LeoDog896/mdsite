@@ -1,6 +1,6 @@
 import { CSS, render } from "https://deno.land/x/gfm@0.2.1/mod.ts";
 
-export function renderMarkdown(markdown: string) {
+export function renderMarkdown(markdown: string, mixin?: string) {
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -17,7 +17,8 @@ export function renderMarkdown(markdown: string) {
 </head>
 <body>
     <main data-color-mode="light" data-light-theme="light" data-dark-theme="dark" class="markdown-body">
-    ${render(markdown)}
+        ${mixin}
+        ${render(markdown)}
     </main>
 </body>
 </html>
