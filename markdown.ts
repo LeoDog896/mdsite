@@ -17,7 +17,7 @@ export function renderMarkdown(markdown: string, mixin?: string) {
 </head>
 <body>
     <main data-color-mode="light" data-light-theme="light" data-dark-theme="dark" class="markdown-body">
-        ${mixin}
+        ${mixin ?? ""}
         ${render(markdown)}
     </main>
 </body>
