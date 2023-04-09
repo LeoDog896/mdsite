@@ -1,4 +1,5 @@
 import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.35-alpha/deno-dom-wasm.ts";
+import { NodeHtmlMarkdown } from "https://esm.sh/node-html-markdown@1.3.0";
 import { Readability } from "https://esm.sh/@mozilla/readability@0.4.4";
 import { serve } from "https://deno.land/std@0.182.0/http/server.ts";
 import { renderMarkdown } from "./markdown.ts";
@@ -9,6 +10,13 @@ const mainPage = `
 # MDSite
 
 Render URLs as Markdown.
+
+## Usage
+
+1. Type \`https://mdsite.deno.dev/https://example.com\` in your browser.
+2. Enjoy the rendered Markdown.
+
+You can also get the raw Markdown by appending \`?raw\` to the URL.
 `;
 
 function status(code: number, message: string): Response {
@@ -58,8 +66,19 @@ const handler = async (request: Request): Promise<Response> => {
     return status(500, "Unable to parse article");
   }
 
+  const renderedMarkdown = NodeHtmlMarkdown.translate(article.content);
+
+  if (url.searchParams.has("raw")) {
+    return new Response(renderedMarkdown, {
+      status: 200,
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+      },
+    });
+  }
+
   return markdown(`# ${article.title}
-${article.content}`);
+${renderedMarkdown}`);
 };
 
 await serve(handler, { port });

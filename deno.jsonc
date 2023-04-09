@@ -1,6 +1,7 @@
 {
   "tasks": {
-    "server": "deno run --allow-net index.ts",
-    "server:dev": "deno run --allow-net --watch index.ts"
+    // LOG_PERF is required (https://github.com/crosstype/node-html-markdown/blob/06a5501523c474f7ae708640d98e4aeabcd67e9b/src/utilities.ts#L214)
+    "server": "deno run --allow-net --allow-env=LOG_PERF index.ts",
+    "server:dev": "deno run --allow-net --allow-env=LOG_PERF --watch index.ts"
   }
 }
