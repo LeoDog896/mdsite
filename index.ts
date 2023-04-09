@@ -19,8 +19,8 @@ function status(code: number, message: string): Response {
   });
 }
 
-function markdown(markdown: string): Response {
-  return new Response(renderMarkdown(markdown, mainPageMixin), {
+function markdown(markdown: string, mixin?: string): Response {
+  return new Response(renderMarkdown(markdown, mixin), {
     status: 200,
     headers: {
       "content-type": "text/html; charset=utf-8",
@@ -32,7 +32,7 @@ const handler = async (request: Request): Promise<Response> => {
   const url = new URL(request.url);
 
   if (url.pathname === "/") {
-    return markdown(mainPage);
+    return markdown(mainPage, mainPageMixin);
   }
 
   const requestedURL = url.pathname.slice(1);
