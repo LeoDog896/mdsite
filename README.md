@@ -13,8 +13,8 @@ Render URLs as Markdown. Deployed on [Deno Deploy](https://deno.com/deploy).
 
 - Appending `?raw` to the URL will return the raw Markdown.
 - Appending `?html` to the URL will return the raw HTML.
-- Appending `?no-rebase` to the URL will return the the page without
-  redirecting to itself.
+- Appending `?no-rebase` to the URL will return the the page without redirecting
+  to itself.
 
 You can use any combination of these queries.
 

@@ -1,13 +1,20 @@
-import { DOMParser, type HTMLDocument, Element } from "https://deno.land/x/deno_dom@v0.1.35-alpha/deno-dom-wasm.ts";
+import {
+  DOMParser,
+  Element,
+  type HTMLDocument,
+} from "https://deno.land/x/deno_dom@v0.1.35-alpha/deno-dom-wasm.ts";
 import { NodeHtmlMarkdown } from "https://esm.sh/node-html-markdown@1.3.0";
 import { Readability } from "https://esm.sh/@mozilla/readability@0.4.4";
 import { serve } from "https://deno.land/std@0.182.0/http/server.ts";
-import { renderMarkdown } from "./markdown.ts";
+import { type Options, renderMarkdown } from "./markdown.ts";
 
 const port = 8080;
 const base = Deno.env.get("BASE") ?? `http://localhost:${port}/`;
 
-const mainPage = (await Deno.readTextFile("./assets/index.md")).replaceAll("{{base}}", base);
+const mainPage = (await Deno.readTextFile("./assets/index.md")).replaceAll(
+  "{{base}}",
+  base,
+);
 
 function status(code: number, message: string): Response {
   return new Response(JSON.stringify({ message }), {
@@ -18,18 +25,21 @@ function status(code: number, message: string): Response {
   });
 }
 
-function markdown(markdown: string): Response {
-  return new Response(renderMarkdown(markdown, true), {
-    status: 200,
-    headers: {
-      "content-type": "text/html; charset=utf-8",
+function markdown(markdown: string, options?: Options): Response {
+  return new Response(
+    renderMarkdown(markdown, options),
+    {
+      status: 200,
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+      },
     },
-  });
+  );
 }
 
-function safeURL(url: string): URL | null {
+function safeURL(url: string, base?: URL): URL | null {
   try {
-    return new URL(url);
+    return new URL(url, base);
   } catch {
     return null;
   }
@@ -44,7 +54,7 @@ function rebaseLinks(document: HTMLDocument, url: URL) {
     }
 
     const l = link as Element;
-    
+
     const href = l.getAttribute("href");
 
     if (!href) {
@@ -65,7 +75,7 @@ function rebaseLinks(document: HTMLDocument, url: URL) {
   }
 
   const images = document.querySelectorAll("img");
-  
+
   for (const image of images) {
     // set the src of image's URL's base to the base of the requested URL
     if (!(image instanceof Element)) {
@@ -84,7 +94,13 @@ function rebaseLinks(document: HTMLDocument, url: URL) {
       continue;
     }
 
-    i.setAttribute("src", new URL(src, url).href);
+    const newURL = safeURL(src, url);
+
+    if (!newURL) {
+      continue;
+    }
+
+    i.setAttribute("src", newURL.href);
   }
 }
 
@@ -93,7 +109,11 @@ const handler = async (request: Request): Promise<Response> => {
 
   // main page
   if (url.pathname === "/") {
-    return markdown(mainPage);
+    return markdown(mainPage, {
+      disableHtmlSanitization: true,
+      title: "MDSite",
+      description: "Convert any webpage to markdown",
+    });
   }
 
   const requestedURL = safeURL(url.pathname.slice(1));
@@ -138,17 +158,26 @@ const handler = async (request: Request): Promise<Response> => {
   const renderedMarkdown = NodeHtmlMarkdown.translate(article.content);
 
   if (url.searchParams.has("raw")) {
-    return new Response(`# ${article.title}\n
-${renderedMarkdown}`, {
-      status: 200,
-      headers: {
-        "content-type": "text/plain; charset=utf-8",
+    return new Response(
+      `# ${article.title}\n
+${renderedMarkdown}`,
+      {
+        status: 200,
+        headers: {
+          "content-type": "text/plain; charset=utf-8",
+        },
       },
-    });
+    );
   }
 
-  return markdown(`# ${article.title} ([original](${requestedURL})) ([raw](?raw))\n\n
-${renderedMarkdown}`);
+  return markdown(
+    `# ${article.title} ([original](${requestedURL})) ([raw](?raw))\n\n
+${renderedMarkdown}`,
+    {
+      title: article.title,
+      description: article.excerpt,
+    },
+  );
 };
 
 await serve(handler, { port });
