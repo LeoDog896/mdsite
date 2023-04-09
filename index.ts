@@ -37,7 +37,7 @@ function safeURL(url: string): URL | null {
   }
 }
 
-function rebaseLinks(document: HTMLDocument) {
+function rebaseLinks(document: HTMLDocument, url: URL) {
   const links = document.querySelectorAll("a");
 
   for (const link of links) {
@@ -64,6 +64,29 @@ function rebaseLinks(document: HTMLDocument) {
     }
 
     l.setAttribute("href", `${base}${url}`);
+  }
+
+  const images = document.querySelectorAll("img");
+  
+  for (const image of images) {
+    // set the src of image's URL's base to the base of the requested URL
+    if (!(image instanceof Element)) {
+      continue;
+    }
+
+    const i = image as Element;
+
+    const src = i.getAttribute("src");
+
+    if (!src) {
+      continue;
+    }
+
+    if (src.startsWith("http")) {
+      continue;
+    }
+
+    i.setAttribute("src", new URL(src, url).href);
   }
 }
 
@@ -95,7 +118,7 @@ const handler = async (request: Request): Promise<Response> => {
   }
 
   if (!url.searchParams.has("no-rebase")) {
-    rebaseLinks(doc);
+    rebaseLinks(doc, requestedURL);
   }
 
   const reader = new Readability(doc as unknown as Document);
