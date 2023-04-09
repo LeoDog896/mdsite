@@ -5,10 +5,11 @@ import { serve } from "https://deno.land/std@0.182.0/http/server.ts";
 import { renderMarkdown } from "./markdown.ts";
 
 const port = 8080;
+const base = Deno.env.get("BASE") ?? `http://localhost:${port}/`;
 
-const mainPage = await Deno.readTextFile("./assets/index.md");
+const mainPage = (await Deno.readTextFile("./assets/index.md")).replaceAll("{{base}}", base);
 
-const mainPageMixin = await Deno.readTextFile("./assets/index-mixin.html");
+const mainPageMixin = (await Deno.readTextFile("./assets/index-mixin.html")).replace("{{base}}", base);
 
 function status(code: number, message: string): Response {
   return new Response(JSON.stringify({ message }), {
@@ -28,14 +29,27 @@ function markdown(markdown: string, mixin?: string): Response {
   });
 }
 
+function safeURL(url: string): URL | null {
+  try {
+    return new URL(url);
+  } catch {
+    return null;
+  }
+}
+
 const handler = async (request: Request): Promise<Response> => {
   const url = new URL(request.url);
 
+  // main page
   if (url.pathname === "/") {
     return markdown(mainPage, mainPageMixin);
   }
 
-  const requestedURL = url.pathname.slice(1);
+  const requestedURL = safeURL(url.pathname.slice(1));
+
+  if (!requestedURL) {
+    return status(400, "Invalid URL");
+  }
 
   const response = await fetch(requestedURL);
 

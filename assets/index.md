@@ -3,7 +3,7 @@ Render URLs as Markdown.
 ## Usage
 
 1. Type
-   [`https://mdsite.deno.dev/https://example.com`](https://mdsite.deno.dev/https://example.com)
+   [`{{base}}https://example.com`]({{base}}https://example.com)
    in your browser.
 2. Enjoy the rendered Markdown.
 
