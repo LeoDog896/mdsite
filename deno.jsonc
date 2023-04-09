@@ -1,6 +1,6 @@
 {
-    "tasks": {
-        "server": "deno run --allow-net index.ts",
-        "server:dev": "deno run --allow-net --watch index.ts"
-    }
+  "tasks": {
+    "server": "deno run --allow-net index.ts",
+    "server:dev": "deno run --allow-net --watch index.ts"
+  }
 }

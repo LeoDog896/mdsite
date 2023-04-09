@@ -9,18 +9,31 @@ const mainPage = `
 # MDSite
 
 Render URLs as Markdown.
-`
+`;
+
+function status(code: number, message: string): Response {
+  return new Response(JSON.stringify({ message }), {
+    status: code,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+    },
+  });
+}
+
+function markdown(markdown: string): Response {
+  return new Response(renderMarkdown(markdown), {
+    status: 200,
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+    },
+  });
+}
 
 const handler = async (request: Request): Promise<Response> => {
   const url = new URL(request.url);
 
   if (url.pathname === "/") {
-    return new Response(renderMarkdown(mainPage), {
-      status: 200,
-      headers: {
-        "content-type": "text/html; charset=utf-8",
-      },
-    });
+    return markdown(mainPage);
   }
 
   const requestedURL = url.pathname.slice(1);
@@ -28,50 +41,25 @@ const handler = async (request: Request): Promise<Response> => {
   const response = await fetch(requestedURL);
 
   if (!response.ok) {
-    return new Response("Not found", { status: 404 });
+    return status(response.status, response.statusText);
   }
 
-  const contentType = response.headers.get("content-type");
+  const html = await response.text();
+  const doc = new DOMParser().parseFromString(html, "text/html");
 
-  if (!contentType) {
-    return new Response("Not found", { status: 404 });
+  if (!doc) {
+    return status(500, "Unable to parse HTML");
   }
 
-  if (contentType.includes("text/html")) {
-    const html = await response.text();
-    const doc = new DOMParser().parseFromString(html, "text/html");
-    
-    if (!doc) {
-      return new Response("Not found", { status: 404 });
-    }
+  const reader = new Readability(doc as unknown as Document);
+  const article = reader.parse();
 
-    const reader = new Readability(doc as unknown as Document);
-    const article = reader.parse();
-
-    if (!article) {
-      return new Response("Not found", { status: 404 });
-    }
-
-    return new Response(renderMarkdown(`# ${article.title}
-${article.content}`), {
-      status: 200,
-      headers: {
-        "content-type": "text/html; charset=utf-8",
-      },
-    });
-
-  } else if (contentType.includes("text/markdown")) {
-    const markdown = await response.text();
-    return new Response(renderMarkdown(markdown), {
-      status: 200,
-      headers: {
-        "content-type": "text/html; charset=utf-8",
-      },
-    });
-
+  if (!article) {
+    return status(500, "Unable to parse article");
   }
 
-  return new Response("Not found", { status: 404 });
+  return markdown(`# ${article.title}
+${article.content}`);
 };
 
 await serve(handler, { port });
